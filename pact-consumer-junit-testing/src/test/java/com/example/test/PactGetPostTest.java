@@ -21,14 +21,22 @@ public class PactGetPostTest {
 		String path = "/hello";
 		String responseBody = "{\"hello\":\"harry\"}";
 
-		RequestResponsePact pact = ConsumerPactBuilder.consumer("Inventary status consumer")
-				.hasPactWith("Inventary status provider").uponReceiving("Request for available item").path(path)
-				.method(HttpGet.METHOD_NAME).willRespondWith().status(200).body(responseBody).toPact();
+		RequestResponsePact pact = ConsumerPactBuilder
+				.consumer("Inventary status consumer")
+				.hasPactWith("Inventary status provider")
+				.uponReceiving("Request for available item")
+				.path(path)
+				.query("itemNo=1234&status=Available")
+				.method(HttpGet.METHOD_NAME)
+				.willRespondWith()
+				.status(200)
+				.body(responseBody)
+				.toPact();
 
 		MockProviderConfig config = MockProviderConfig.createDefault();
 
 		PactVerificationResult result = runConsumerTest(pact, config, mockServer -> {
-			String response = Request.Get(mockServer.getUrl() + path)
+			String response = Request.Get(mockServer.getUrl() + path + "?itemNo=1234&status=Available")
 					.addHeader("testreqheader", "testreqheadervalue")
 					.execute().returnContent().asString();
 			Assert.assertEquals("Response is invalid.", response, responseBody);
