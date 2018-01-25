@@ -3,10 +3,10 @@ package com.example.test;
 import static au.com.dius.pact.consumer.ConsumerPactRunnerKt.runConsumerTest;
 import static org.junit.Assert.assertEquals;
 
-import java.util.HashMap;
-import java.util.Map;
-
+import org.apache.http.client.fluent.Request;
+import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
+import org.junit.Assert;
 import org.junit.Test;
 
 import au.com.dius.pact.consumer.ConsumerPactBuilder;
@@ -17,25 +17,31 @@ import au.com.dius.pact.model.RequestResponsePact;
 public class FirstTest {
 	@Test
 	  public void testPact() {
+		
+		String path = "/hello";
+		String requestBody = "{\"name\":\"harry\"}";
+		String responseBody = "{\"hello\":\"harry\"}";
+		
 	    RequestResponsePact pact = ConsumerPactBuilder
 	      .consumer("Inventary status consumer")
 	      .hasPactWith("Inventary status provider")
 	      .uponReceiving("Request for available item")
-	      .path("/hello")
-	      .method("POST")
-	      .body("{\"name\": \"harry\"}")
+	      .path(path)
+	      .method(HttpPost.METHOD_NAME)
+	      .body(requestBody)
 	      .willRespondWith()
 	      .status(200)
-	      .body("{\"hello\": \"harry\"}")
+	      .body(responseBody)
 	      .toPact();
 
 	    MockProviderConfig config = MockProviderConfig.createDefault();
 	    
 	    PactVerificationResult result = runConsumerTest(pact, config, mockServer->{
-	        Map<String, Object> expectedResponse = new HashMap<>();
-	        expectedResponse.put("hello", "harry");
-	        assertEquals(expectedResponse, new ConsumerClient(mockServer.getUrl()).post("/hello",
-	            "{\"name\": \"harry\"}", ContentType.APPLICATION_JSON));
+	    	String response = Request.Post(mockServer.getUrl() + path)
+            	.addHeader("testreqheader", "testreqheadervalue")
+            	.bodyString(requestBody, ContentType.APPLICATION_JSON)
+            	.execute().returnContent().asString();
+	    	Assert.assertEquals("Response is invalid.", response, responseBody);
 	      }
 	    );
 
